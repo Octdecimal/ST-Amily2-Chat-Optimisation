@@ -69,10 +69,6 @@ export function populateModelDropdown() {
 
 
 export function updateUI() {
-  if (!pluginAuthStatus.authorized) {
-    $("#auth_panel").show();
-    $(".plugin-features").hide();
-  } else {
     $("#auth_panel").hide();
     $(".plugin-features").show();
 
@@ -177,8 +173,6 @@ export function updateUI() {
         }
     });
 }
-}
-
 
 // =====================================================================
 // ======== 【剧情优化】 - UI状态管理 ========

@@ -31,7 +31,7 @@ import { initializeApiListener, registerApiHandler, amilyHelper, initializeAmily
 import { registerContextOptimizerMacros, resetContextBuffer } from './core/context-optimizer.js';
 import { initializeSuperMemory } from './core/super-memory/manager.js';
 
-const DOMPURIFY_CDN = "https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js";
+const DOMPURIFY_CDN = "https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js";
 
 function loadExternalScript(url, globalName) {
     return new Promise((resolve, reject) => {
@@ -250,18 +250,16 @@ function sanitizeHTML(html) {
             continue;
         }
 
-        // 移除所有属性，只保留允许的
         const attrs = Array.from(el.attributes);
         for (const attr of attrs) {
             const attrName = attr.name.toLowerCase();
             if (!allowedAttrs.includes(attrName)) {
                 el.removeAttribute(attr.name);
             } else if (attrName === 'href') {
-                // 检查 href 是否包含 javascript:
                 if (attr.value.toLowerCase().trim().startsWith('javascript:')) {
                     el.removeAttribute('href');
                 }
-            } else if (attrName.startsWith('on')) { // 双重保险，移除所有事件处理器
+            } else if (attrName.startsWith('on')) { 
                 el.removeAttribute(attr.name);
             }
         }
@@ -276,7 +274,6 @@ async function handleMessageBoard() {
             if (messageData && messageData.message) {
                 const messageBoard = $('#amily2_message_board');
                 const messageContent = $('#amily2_message_content');
-                // 使用净化后的 HTML，防止 XSS 攻击
                 const safeContent = sanitizeHTML(messageData.message);
                 messageContent.html(safeContent); 
                 messageBoard.show();
@@ -287,10 +284,8 @@ async function handleMessageBoard() {
         }
     };
     await updateMessage();
-    setInterval(updateMessage, 300000); // 5分钟刷新一次（从60秒改为300秒）
+    setInterval(updateMessage, 300000);
 }
-
-
 
 function loadPluginStyles() {
     const loadStyleFile = (fileName) => {
@@ -347,9 +342,7 @@ function loadPluginStyles() {
 
 
 window.addEventListener('message', function (event) {
-    // 处理头像获取请求
     if (event.data && event.data.type === 'getAvatars') {
-        // 【兼容性修复】如果 LittleWhiteBox 激活，则不处理此消息，避免冲突
         if (window.isXiaobaixEnabled) {
             return;
         }
@@ -363,7 +356,6 @@ window.addEventListener('message', function (event) {
         return;
     }
 
-    // 处理来自 iframe 的交互事件
     if (event.data && event.data.source === 'amily2-iframe') {
         const { action, detail } = event.data;
         console.log(`[Amily2-主窗口] 收到来自iframe的动作: ${action}`, detail);
@@ -411,10 +403,8 @@ window.addEventListener("error", (event) => {
 jQuery(async () => {
   console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
 
-  // 启动外部库加载 (DOMPurify)
   loadExternalScript(DOMPURIFY_CDN, 'DOMPurify').catch(e => console.warn("[Amily2] DOMPurify 加载失败，将使用内置净化器:", e));
-  
-  // 【V146.2 紧急优化】优先注册上下文优化器，确保它在密折司之前拦截并处理 Prompt
+
   try {
       console.log("[Amily2号-开国大典] 步骤0：优先注册上下文优化器...");
       registerContextOptimizerMacros();
@@ -422,7 +412,6 @@ jQuery(async () => {
       console.error("[Amily2号-开国大典] 上下文优化器注册失败:", e);
   }
 
-  // 【密折司】延迟加载，确保它排在优化器之后
   try {
       await import("./MiZheSi/index.js");
       console.log("[Amily2号-开国大典] 密折司模块已就位。");
@@ -616,7 +605,10 @@ jQuery(async () => {
 
         console.log("[Amily2号-开国大典] 步骤3.8：注册表格占位符宏...");
         try {
+<<<<<<< HEAD
 
+=======
+>>>>>>> e893edd (Remove authorization panel and related functionality from modal, bindings, drawer, and state files)
             eventSource.on(event_types.GENERATION_STARTED, () => {
                 resetContextBuffer();
             });
@@ -677,7 +669,6 @@ jQuery(async () => {
                 const context = getContext();
 
                 if (!userMessage) {
-                    // 尝试从聊天记录中获取最后一条用户消息（针对 /send 指令场景）
                     if (context.chat && context.chat.length > 0) {
                         const lastMsg = context.chat[context.chat.length - 1];
                         if (lastMsg.is_user) {
@@ -730,7 +721,6 @@ jQuery(async () => {
                 const contextTurnCount = globalSettings.plotOpt_contextLimit || 10;
                 let slicedContext = [];
                 
-                // 如果是从聊天记录中获取的消息，上下文需要排除最后一条
                 const contextSource = isFromTextarea ? context.chat : context.chat.slice(0, -1);
                 
                 if (contextTurnCount > 0) {
@@ -891,21 +881,14 @@ jQuery(async () => {
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
 
-        // 【新增功能】每次加载插件时，如果已授权，则弹出提示
         if (checkAuthorization()) {
             const userType = localStorage.getItem("plugin_user_type") || "未知";
             const userNote = localStorage.getItem("plugin_user_note");
-            
-            // 1. 先显示本地缓存的状态，保证启动速度和体验
             const displayNote = userNote || userType;
             toastr.success(`欢迎回来！授权状态有效 (用户: ${displayNote})`, "Amily2 插件已就绪");
-
-            // 2. 后台静默刷新，检查过期状态或信息更新
-            // 即使本地有备注，也需要去服务器验证一下是否过期
             refreshUserInfo().then(data => {
                 if (data && data.note && data.note !== userNote) {
                     console.log("[Amily2] 用户信息已更新:", data.note);
-                    // 如果备注变了，可以选择再次提示或者静默更新
                 }
             }).catch(e => {
                 console.warn("[Amily2] 后台刷新用户信息失败:", e);
@@ -921,16 +904,10 @@ jQuery(async () => {
         } else {
             console.warn("[Amily2号-版本系统] 版本检测器未找到，可能加载失败");
         }
-
-        handleUpdateCheck();
-        handleMessageBoard();
-        initializeOnlineTracker(); // 【Amily2号-在线统计】启动在线人数统计
-        initializeLocalLinkage(); // 【Amily2号-本地联动】启动本地联动服务
         
-        // 【V146.4】自动初始化超级记忆系统
         setTimeout(() => {
             initializeSuperMemory();
-        }, 3000); // 延迟3秒以确保 ST 环境完全就绪
+        }, 3000); 
 
         initializeRenderer(); 
 
@@ -981,12 +958,10 @@ function applyMessageLimit() {
     const total = messages.length;
     
     if (total <= limit) {
-        // 如果消息数未超标，确保所有消息可见
         messages.forEach(el => el.style.display = '');
         return;
     }
 
-    // 隐藏旧消息，保留最后 limit 条
     const hideCount = total - limit;
     for (let i = 0; i < total; i++) {
         if (i < hideCount) {
@@ -998,184 +973,5 @@ function applyMessageLimit() {
     console.log(`[Amily2-性能优化] 已隐藏 ${hideCount} 条旧消息，仅显示最近 ${limit} 条。`);
 }
 
-// 监听聊天更新事件以应用限制
 eventSource.on(event_types.MESSAGE_RECEIVED, () => setTimeout(applyMessageLimit, 100));
 eventSource.on(event_types.chat_updated, () => setTimeout(applyMessageLimit, 100));
-
-function initializeOnlineTracker() {
-    const wsUrl = 'wss://amilyservice.amily49.cc';
-    
-    let ws = null;
-    let reconnectTimer = null;
-    let isConnecting = false;
-    
-    function mountTracker() {
-        const $drawerContent = $('#amily2_drawer_content');
-        if ($drawerContent.length === 0 || !$drawerContent.data('initialized')) {
-            setTimeout(mountTracker, 1000); 
-            return;
-        }
-        if ($('#amily2-online-tracker').length > 0) return;
-        const $container = $('<div id="amily2-online-tracker" style="text-align: center; padding: 8px; font-size: 13px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;"></div>');
-        $container.html('<i class="fas fa-users" style="color: #4caf50; font-size: 12px; vertical-align: middle; margin-right: 6px;"></i><span id="amily2-online-count" style="vertical-align: middle; font-weight: bold;">Connecting...</span>');
-
-        $drawerContent.prepend($container);
-        
-        connect();
-    }
-
-    function connect() {
-        // 单例模式检查：如果已有连接且处于连接中或打开状态，则不重复创建
-        if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
-            console.log('[Amily2-在线统计] 连接已存在，跳过创建');
-            return;
-        }
-
-        // 防止短时间内重复调用
-        if (isConnecting) return;
-        isConnecting = true;
-
-        // 清理旧连接
-        if (ws) {
-            try {
-                ws.close();
-            } catch (e) {}
-            ws = null;
-        }
-
-        try {
-            console.log('[Amily2-在线统计] 开始建立连接...');
-            ws = new WebSocket(wsUrl);
-
-            ws.onopen = () => {
-                console.log('[Amily2-在线统计] 已连接到服务器');
-                isConnecting = false;
-                if (reconnectTimer) {
-                    clearTimeout(reconnectTimer);
-                    reconnectTimer = null;
-                }
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    if (data.type === 'online_count') {
-                        $('#amily2-online-count').text(`${data.count} 人在线`);
-                    }
-                } catch (e) {
-                    console.error('[Amily2-在线统计] 解析消息失败:', e);
-                }
-            };
-
-            ws.onclose = () => {
-                console.log('[Amily2-在线统计] 连接断开');
-                $('#amily2-online-count').text('离线');
-                isConnecting = false;
-                ws = null;
-                
-                // 延迟重连，而不是立即循环
-                if (!reconnectTimer) {
-                    reconnectTimer = setTimeout(() => {
-                        reconnectTimer = null;
-                        connect();
-                    }, 5000);
-                }
-            };
-            
-            ws.onerror = (err) => {
-                console.warn('[Amily2-在线统计] 连接错误:', err);
-                // onerror 通常会触发 onclose，所以这里不需要额外的重连逻辑，交给 onclose 处理
-            };
-        } catch (e) {
-            console.error('[Amily2-在线统计] 初始化失败:', e);
-            isConnecting = false;
-            if (!reconnectTimer) {
-                reconnectTimer = setTimeout(() => {
-                    reconnectTimer = null;
-                    connect();
-                }, 5000);
-            }
-        }
-    }
-
-    // 启动挂载流程
-    mountTracker();
-}
-
-function initializeLocalLinkage() {
-    const wsUrl = 'ws://127.0.0.1:2086';
-    let ws = null;
-    let retryCount = 0;
-    const maxRetries = 5;
-
-    function connect() {
-        if (retryCount >= maxRetries) {
-            console.log('[Amily2-本地联动] 达到最大重试次数，停止连接本地服务。');
-            return;
-        }
-
-        console.log('[Amily2-本地联动] 尝试连接本地联动服务...');
-        ws = new WebSocket(wsUrl);
-
-        ws.onopen = () => {
-            console.log('[Amily2-本地联动] 已连接到启动器服务');
-            if (window.toastr) toastr.success('已连接到 Amily 启动器', '本地联动');
-            retryCount = 0; // 连接成功，重置计数
-        };
-
-        ws.onmessage = async (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.type === 'command') {
-                    console.log('[Amily2-本地联动] 收到指令:', data.command, data.args);
-                    if (data.command === 'triggerSlash') {
-                        if (window.AmilyHelper) {
-                            await window.AmilyHelper.triggerSlash(data.args.content);
-                        }
-                    } else if (data.command === 'cleanOldMessages') {
-                        const keep = parseInt(data.args.keep) || 50;
-                        if (window.AmilyHelper) {
-                            const total = window.AmilyHelper.getLastMessageId() + 1;
-                            if (total > keep) {
-                                const deleteCount = total - keep;
-                                // 生成要删除的 ID 列表 (0 到 deleteCount - 1)
-                                const idsToDelete = Array.from({length: deleteCount}, (_, i) => i);
-                                await window.AmilyHelper.deleteChatMessages(idsToDelete, { refresh: 'all' });
-                                if (window.toastr) window.toastr.success(`已清理 ${deleteCount} 条旧消息，保留最近 ${keep} 条`, '清理完成');
-                            } else {
-                                if (window.toastr) window.toastr.info('消息数量未超过保留限制，无需清理', '无需清理');
-                            }
-                        }
-                    } else if (data.command === 'setMaxMessages') {
-                        const limit = parseInt(data.args.limit);
-                        if (!isNaN(limit) && limit > 0) {
-                            window.amily2MaxMessages = limit;
-                            applyMessageLimit();
-                            if (window.toastr) window.toastr.success(`已限制显示最近 ${limit} 条消息`, '性能优化');
-                        }
-                    }
-                    // 这里可以扩展更多指令
-                }
-            } catch (e) {
-                console.error('[Amily2-本地联动] 处理消息失败:', e);
-            }
-        };
-
-        ws.onclose = () => {
-            console.log('[Amily2-本地联动] 连接断开');
-            retryCount++;
-            if (retryCount < maxRetries) {
-                console.log(`[Amily2-本地联动] ${5}秒后尝试重连 (${retryCount}/${maxRetries})`);
-                setTimeout(connect, 5000);
-            } else {
-                console.log('[Amily2-本地联动] 已停止重连尝试。');
-            }
-        };
-
-        ws.onerror = (err) => {
-            // console.warn('[Amily2-本地联动] 连接错误:', err);
-        };
-    }
-
-    connect();
-}
