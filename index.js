@@ -605,10 +605,6 @@ jQuery(async () => {
 
         console.log("[Amily2号-开国大典] 步骤3.8：注册表格占位符宏...");
         try {
-<<<<<<< HEAD
-
-=======
->>>>>>> e893edd (Remove authorization panel and related functionality from modal, bindings, drawer, and state files)
             eventSource.on(event_types.GENERATION_STARTED, () => {
                 resetContextBuffer();
             });
